@@ -139,6 +139,13 @@
   const zoom = document.getElementById('zoom');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Ordena grupos em ordem alfabética, mas o grupo "9999" sempre vai para o final
+  const ULTIMO = '9999';
+  const cmpGrupo = (a, b) => {
+    const ua = String(a).trim() === ULTIMO, ub = String(b).trim() === ULTIMO;
+    if (ua !== ub) return ua ? 1 : -1;
+    return a.localeCompare(b, 'pt-BR');
+  };
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   // Lê o CSV como UTF-8; se vier com caracteres quebrados (export do ERP), usa Windows-1252
@@ -157,7 +164,7 @@
         o.grupoNome = o.grupo || 'Sem grupo';
         return o;
       });
-      [...new Set(produtos.map(p => p.grupo).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'))
+      [...new Set(produtos.map(p => p.grupo).filter(Boolean))].sort(cmpGrupo)
         .forEach(g => selGrupo.add(new Option(g, g)));
       filtrar();
     })
@@ -168,7 +175,7 @@
     const grupo = selGrupo.value;
     filtrados = produtos
       .filter(p => (!grupo || p.grupo === grupo) && (!termo || p.chave.includes(termo)))
-      .sort((a, b) => a.grupoNome.localeCompare(b.grupoNome, 'pt-BR'));
+      .sort((a, b) => cmpGrupo(a.grupoNome, b.grupoNome));
     contagem = {};
     filtrados.forEach(p => { contagem[p.grupoNome] = (contagem[p.grupoNome] || 0) + 1; });
     grade.innerHTML = '';
