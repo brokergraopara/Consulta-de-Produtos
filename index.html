@@ -11,29 +11,32 @@
   :root {
     --bg: #eef3fc; --surface: #fff; --text: #222; --muted: #666;
     --line: #e4e4e4; --accent: #0078D7; --ph: #e9edf2;
+    --painel: #e6eefb; --painel-borda: #cddcf5;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #16181c; --surface: #20242a; --text: #eceff3; --muted: #9aa3ad;
-            --line: #323842; --accent: #4aa3ff; --ph: #2a3038; }
+            --line: #323842; --accent: #4aa3ff; --ph: #2a3038;
+            --painel: #1b2233; --painel-borda: #2c3a57; }
   }
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background: var(--bg); color: var(--text); }
   :root { --royal: #4169E1; --onda-base: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 40' preserveAspectRatio='none'><path d='M0,20 C240,40 480,0 720,20 C960,40 1200,0 1440,20 L1440,40 L0,40 Z'/></svg>");
           --onda-topo: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 40' preserveAspectRatio='none'><path d='M0,0 L1440,0 L1440,20 C1200,40 960,0 720,20 C480,40 240,0 0,20 Z'/></svg>"); }
 
-  header { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px;
+  header { position: relative; display: grid; grid-template-columns: 3fr 6fr 1fr; align-items: center; gap: 12px;
            margin: -15px -15px 10px; padding: 24px 28px 64px; background: var(--royal); color: #fff; }
   header::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 40px;
                   background: var(--bg); -webkit-mask: var(--onda-base) bottom / 100% 100% no-repeat;
                   mask: var(--onda-base) bottom / 100% 100% no-repeat; }
-  header img { height: 84px; width: auto; max-width: 280px; object-fit: contain; background: #fff;
+  header img { width: 100%; height: auto; max-height: 130px; object-fit: contain; background: #fff;
                padding: 10px 16px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
   header h2 { grid-column: 2; transform: translateY(-12px); }
   @media (max-width: 700px) {
     header { grid-template-columns: 1fr; }
-    header h2 { grid-column: 1; transform: none; }
+    header h2 { grid-column: 1; transform: none; font-size: 8vw; }
+    header img { width: auto; height: 84px; max-width: 60vw; max-height: none; }
   }
-  h2 { margin: 0; font-size: clamp(22px, 4vw, 32px); text-align: center;
+  h2 { margin: 0; font-size: 5.5vw; white-space: nowrap; text-align: center;
        font-family: "Nunito", "Arial Rounded MT Bold", Arial, sans-serif; font-weight: 800; }
 
   .rodape { position: relative; height: 72px; margin: 40px -15px -15px; background: var(--royal); }
@@ -49,7 +52,13 @@
   .toolbar input { flex: 1; min-width: 220px; max-width: 400px; }
   #contador { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 12px; }
 
-  #grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+  #grade { display: flex; flex-direction: column; gap: 22px; }
+  .grupo { background: var(--painel); border: 1px solid var(--painel-borda); border-radius: 16px; padding: 16px 18px 18px; }
+  .grupo h3 { margin: 0 0 14px; display: flex; align-items: center; gap: 10px; color: var(--accent);
+              font-family: "Nunito", Arial, sans-serif; font-weight: 800; font-size: 20px; }
+  .qtd { background: var(--surface); color: var(--accent); border: 1px solid var(--painel-borda); border-radius: 999px;
+         font: bold 12px Arial, sans-serif; padding: 3px 10px; }
+  .grade-grupo { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
           display: flex; flex-direction: column; }
   .foto { height: 150px; background: #fff; display: flex; align-items: center; justify-content: center;
@@ -121,6 +130,7 @@
   const ICONE_OK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 
   let produtos = [], filtrados = [], exibidos = 0;
+  let contagem = {}, grupoAtual = null, gradeAtual = null;
   const grade = document.getElementById('grade');
   const busca = document.getElementById('busca');
   const selGrupo = document.getElementById('filtroGrupo');
@@ -144,6 +154,7 @@
                     familia: (p[2]||'').trim(), grupo: (p[3]||'').trim(), ean: (p[4]||'').trim() };
         o.imgs = [(p[5]||'').trim(), (p[6]||'').trim()].filter(u => /^(https?:)?\/\//i.test(u) || /^[\w./-]+\.(jpe?g|png|webp|gif)/i.test(u));
         o.chave = norm(`${o.sku} ${o.descricao} ${o.ean}`);
+        o.grupoNome = o.grupo || 'Sem grupo';
         return o;
       });
       [...new Set(produtos.map(p => p.grupo).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'))
@@ -155,17 +166,29 @@
   function filtrar() {
     const termo = norm(busca.value.trim());
     const grupo = selGrupo.value;
-    filtrados = produtos.filter(p => (!grupo || p.grupo === grupo) && (!termo || p.chave.includes(termo)));
+    filtrados = produtos
+      .filter(p => (!grupo || p.grupo === grupo) && (!termo || p.chave.includes(termo)))
+      .sort((a, b) => a.grupoNome.localeCompare(b.grupoNome, 'pt-BR'));
+    contagem = {};
+    filtrados.forEach(p => { contagem[p.grupoNome] = (contagem[p.grupoNome] || 0) + 1; });
     grade.innerHTML = '';
-    exibidos = 0;
+    exibidos = 0; grupoAtual = null; gradeAtual = null;
     contador.textContent = `${filtrados.length} produto(s)`;
     maisCards();
   }
 
   function maisCards() {
-    const frag = document.createDocumentFragment();
-    filtrados.slice(exibidos, exibidos + POR_PAGINA).forEach(p => frag.appendChild(criarCard(p)));
-    grade.appendChild(frag);
+    filtrados.slice(exibidos, exibidos + POR_PAGINA).forEach(p => {
+      if (p.grupoNome !== grupoAtual) {
+        grupoAtual = p.grupoNome;
+        const sec = document.createElement('section');
+        sec.className = 'grupo';
+        sec.innerHTML = `<h3>${esc(grupoAtual)} <span class="qtd">${contagem[grupoAtual]}</span></h3><div class="grade-grupo"></div>`;
+        grade.appendChild(sec);
+        gradeAtual = sec.querySelector('.grade-grupo');
+      }
+      gradeAtual.appendChild(criarCard(p));
+    });
     exibidos = Math.min(exibidos + POR_PAGINA, filtrados.length);
     btnMais.hidden = exibidos >= filtrados.length;
   }
