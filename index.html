@@ -49,12 +49,12 @@
   .toolbar input { flex: 1; min-width: 220px; max-width: 400px; }
   #contador { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 12px; }
 
-  #grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  #grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
           display: flex; flex-direction: column; }
-  .foto { aspect-ratio: 1 / 1; background: var(--ph); display: flex; align-items: center; justify-content: center;
-          cursor: zoom-in; border: 0; padding: 0; width: 100%; }
-  .foto img { width: 100%; height: 100%; object-fit: contain; }
+  .foto { height: 150px; background: #fff; display: flex; align-items: center; justify-content: center;
+          cursor: zoom-in; border: 0; border-bottom: 1px solid var(--line); padding: 0; width: 100%; overflow: hidden; }
+  .foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 6px; }
   .foto.sem { cursor: default; color: var(--muted); font-size: 13px; }
   .foto { position: relative; }
   .badge { position: absolute; right: 6px; bottom: 6px; background: rgba(0,0,0,.65); color: #fff;
@@ -67,6 +67,11 @@
   #miniaturas img { width: 100%; height: 100%; object-fit: cover; max-height: none; }
   .info { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; }
   .sku { font-weight: bold; color: var(--accent); font-size: 14px; }
+  .sku-linha { display: flex; align-items: center; gap: 6px; }
+  .copiar { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0;
+            border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--accent); cursor: pointer; }
+  .copiar:hover { background: var(--ph); }
+  .copiar.ok { color: #1a9e4b; border-color: #1a9e4b; }
   .desc { font-size: 14px; line-height: 1.3; }
   .meta { font-size: 12px; color: var(--muted); }
 
@@ -112,6 +117,8 @@
 <script>
   /* As imagens vêm do produtos.csv: coluna F = img1, coluna G = img2 (URLs completas). */
   const POR_PAGINA = 60;
+  const ICONE_COPIAR = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  const ICONE_OK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 
   let produtos = [], filtrados = [], exibidos = 0;
   const grade = document.getElementById('grade');
@@ -169,11 +176,26 @@
     card.innerHTML = `
       <button class="foto sem" type="button" aria-label="Ampliar foto de ${esc(p.descricao)}"></button>
       <div class="info">
-        <span class="sku">${esc(p.sku)}</span>
+        <div class="sku-linha">
+          <span class="sku">${esc(p.sku)}</span>
+          <button type="button" class="copiar" title="Copiar SKU" aria-label="Copiar SKU ${esc(p.sku)}">${ICONE_COPIAR}</button>
+        </div>
         <span class="desc">${esc(p.descricao)}</span>
         <span class="meta">${esc([p.familia, p.grupo].filter(Boolean).join(' • '))}</span>
         <span class="meta">${p.ean ? 'EAN ' + esc(p.ean) : ''}</span>
       </div>`;
+    const btn = card.querySelector('.copiar');
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(p.sku);
+      } catch {
+        const t = document.createElement('textarea');
+        t.value = p.sku; t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+      }
+      btn.innerHTML = ICONE_OK; btn.classList.add('ok'); btn.title = 'Copiado!';
+      setTimeout(() => { btn.innerHTML = ICONE_COPIAR; btn.classList.remove('ok'); btn.title = 'Copiar SKU'; }, 1500);
+    });
     const foto = card.querySelector('.foto');
     // Testa img1 e img2; usa só as que carregam. O selo "2 fotos" só aparece se as duas funcionarem.
     validar(p.imgs, ok => {
