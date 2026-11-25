@@ -146,6 +146,11 @@
     if (ua !== ub) return ua ? 1 : -1;
     return a.localeCompare(b, 'pt-BR');
   };
+  // Dentro do grupo, ordena por EAN (numérico); produtos sem EAN vão para o fim
+  const cmpEan = (a, b) => {
+    if (!a !== !b) return a ? -1 : 1;
+    return String(a).localeCompare(String(b), 'pt-BR', { numeric: true });
+  };
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   // Lê o CSV como UTF-8; se vier com caracteres quebrados (export do ERP), usa Windows-1252
@@ -175,7 +180,7 @@
     const grupo = selGrupo.value;
     filtrados = produtos
       .filter(p => (!grupo || p.grupo === grupo) && (!termo || p.chave.includes(termo)))
-      .sort((a, b) => cmpGrupo(a.grupoNome, b.grupoNome));
+      .sort((a, b) => cmpGrupo(a.grupoNome, b.grupoNome) || cmpEan(a.ean, b.ean));
     contagem = {};
     filtrados.forEach(p => { contagem[p.grupoNome] = (contagem[p.grupoNome] || 0) + 1; });
     grade.innerHTML = '';
